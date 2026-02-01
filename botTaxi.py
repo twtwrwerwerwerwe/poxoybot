@@ -4,7 +4,7 @@ from telethon import TelegramClient, events
 api_id = 35866911
 api_hash = '62b2dda72eb7f9648d09b23110398946'
 
-client = TelegramClient('taxi_session_fast', api_id, api_hash)
+client = TelegramClient('taxi_session', api_id, api_hash)
 
 # =================== SKIP CHAT ID ===================
 SKIP_CHAT_IDS = {
@@ -116,11 +116,6 @@ async def handler(event):
 
 
 # =================== START ===================
-# =================== START ===================
 print("🚀 TEZ TAXI BOT ISHGA TUSHDI")
-
-# Telefon raqamingizni shu yerga qo'ying (user account)
-client.start(phone='+998200238590')  # shu yerga o'z telefon raqamingizni yozing
-
+client.start()
 client.run_until_disconnected()
-
