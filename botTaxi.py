@@ -116,6 +116,11 @@ async def handler(event):
 
 
 # =================== START ===================
+# =================== START ===================
 print("🚀 TEZ TAXI BOT ISHGA TUSHDI")
-client.start()
+
+# Telefon raqamingizni shu yerga qo'ying (user account)
+client.start(phone='+998200238590')  # shu yerga o'z telefon raqamingizni yozing
+
 client.run_until_disconnected()
+
