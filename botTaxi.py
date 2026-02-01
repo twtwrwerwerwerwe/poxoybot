@@ -1,3 +1,5 @@
+import re
+import asyncio
 from telethon import TelegramClient, events
 
 # =================== TELEGRAM API ===================
@@ -7,14 +9,14 @@ api_hash = '62b2dda72eb7f9648d09b23110398946'
 client = TelegramClient('taxi_session', api_id, api_hash)
 
 # =================== SKIP CHAT ID ===================
-SKIP_CHAT_IDS = {
+SKIP_CHAT_IDS = [
     -1003565381874
-}
+]
 
 # =================== TARGET CHAT ID ===================
-TARGET_CHAT_IDS = {
+TARGET_CHAT_IDS = [
     -1003565381874
-}
+]
 
 # =================== KALIT SO‘ZLAR ===================
 KEYWORDS = [
@@ -75,47 +77,90 @@ KEYWORDS = [
     "Тунилдан тушямиз бешарика 1киши бор", "Тошкентдан 1 киши бор"
 ]
 
+KEYWORDS_RE = re.compile("|".join(re.escape(k) for k in KEYWORDS), re.IGNORECASE)
+
+# =================== TELEFON REGEX ===================
+PHONE_RE = re.compile(r'(\+?998[\d\-\s\(\)]{9,15}|9\d{8})')
+
+
+def normalize_phone(raw):
+    digits = re.sub(r'\D', '', raw)
+    if digits.startswith('998') and len(digits) >= 12:
+        return '+' + digits[:12]
+    if len(digits) == 9:
+        return '+998' + digits
+    return None
+
+
 # =================== HANDLER ===================
 @client.on(events.NewMessage(incoming=True))
 async def handler(event):
+    try:
+        # 🔥 FAQAT SEN ULANGAN GURUH VA KANALLAR
+        if not (event.is_group or event.is_channel):
+            return
 
-    if not (event.is_group or event.is_channel):
-        return
+        chat_id = event.chat_id
+        if chat_id in SKIP_CHAT_IDS:
+            return
 
-    if event.chat_id in SKIP_CHAT_IDS:
-        return
+        text = event.raw_text
+        if not text or not KEYWORDS_RE.search(text):
+            return
 
-    text = event.raw_text
-    if not text:
-        return
+        chat, sender = await asyncio.gather(
+            event.get_chat(),
+            event.get_sender()
+        )
 
-    text_l = text.lower()
+        group_name = getattr(chat, 'title', 'Nomaʼlum guruh')
+        if getattr(chat, 'username', None):
+            group_link = f"https://t.me/{chat.username}/{event.id}"
+            group_display = f"<a href='{group_link}'>{group_name}</a>"
+        else:
+            group_display = group_name
 
-    # ⚡ ENG TEZ FILTR
-    if not any(k in text_l for k in KEYWORDS):
-        return
+        username = getattr(sender, 'username', None)
+        owner_display = f"@{username}" if username else "Berkitilgan"
 
-    # 🔗 LINKLAR
-    sender_link = f"tg://user?id={event.sender_id}"
-    
-    # Telegram xabar linki uchun: private chat bo'lsa chat_id musbat, kanal bo'lsa -100xxxx → c/<chat_id>/<msg_id>
-    if str(event.chat_id).startswith("-100"):
-        chat_link = f"https://t.me/c/{str(event.chat_id)[4:]}/{event.id}"
-    else:
-        chat_link = f"https://t.me/c/{event.chat_id}/{event.id}"
+        sender_id = getattr(sender, 'id', None)
+        profile_link = (
+            f"<a href='tg://user?id={sender_id}'>Profilga o‘tish</a>"
+            if sender_id else "Berkitilgan"
+        )
 
-    msg = (
-        "🚖 <b>XAMROH TAXI</b>\n\n"
-        f"📝 {text}\n\n"
-        f"👤 <a href='{sender_link}'>Profilga o‘tish</a>\n"
-        f"🔗 <a href='{chat_link}'>Xabarga o‘tish</a>"
-    )
+        phone = normalize_phone(sender.phone) if sender.phone else None
+        if not phone:
+            for m in PHONE_RE.finditer(text):
+                phone = normalize_phone(m.group(0))
+                if phone:
+                    break
 
-    for target_id in TARGET_CHAT_IDS:
-        await client.send_message(target_id, msg, parse_mode="html")
+        phone_display = phone if phone else "Berkitilgan"
+
+        message_text = (
+            f"🚖 <b>XAMROH TAXI</b>\n\n"
+            f"📝 <b></b> {text}\n\n"
+            f"📍 <b>Guruh:</b> {group_display}\n\n"
+            f"👤 <b></b> {owner_display}\n\n"
+            f"📞 <b></b> {phone_display}\n\n"
+            f"🔗 <b></b> {profile_link}"
+        )
+
+
+        for target_id in TARGET_CHAT_IDS:
+            await client.send_message(
+                target_id,
+                message_text,
+                parse_mode='html'
+            )
+            print(f"📨 Yuborildi → {target_id}")
+
+    except Exception as e:
+        print("❌ Xatolik:", e)
 
 
 # =================== START ===================
-print("🚀 TEZ TAXI BOT ISHGA TUSHDI")
+print("🚕 Taxi bot ishga tushdi...")
 client.start()
 client.run_until_disconnected()
