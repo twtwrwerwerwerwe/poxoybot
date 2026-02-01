@@ -139,12 +139,12 @@ async def handler(event):
         phone_display = phone if phone else "Berkitilgan"
 
         message_text = (
-            f"🚖 <b>Hamroh taxi</b>\n"
-            f"📝 <b></b> {text}\n"
-            f"📍 <b>Guruh:</b> {group_display}\n"
-            f"👤 <b></b> {owner_display}\n"
-            f"📞 <b></b> {phone_display}\n"
-            f"🔗 <b>Profilga o'tish:</b> {profile_link}"
+            f"🚖 <b>XAMROH TAXI</b>\n\n"
+            f"📝 <b></b> {text}\n\n"
+            f"📍 <b>Guruh:</b> {group_display}\n\n"
+            f"👤 <b></b> {owner_display}\n\n"
+            f"📞 <b></b> {phone_display}\n\n"
+            f"🔗 <b></b> {profile_link}"
         )
 
 
